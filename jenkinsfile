@@ -1,28 +1,29 @@
 pipeline{
     agent any
     environment {
-        GIT_REP0 = "https://github.com/tejashree-dev/self_project.git"
+        GIT_REPO = "https://github.com/tejashree-dev/self_project.git"
         GIT_BRANCH = "master"
-        DOKCER_IMAGE = "warkad/self_project"
+        DOCKER_IMAGE = "warkad/self_project"
         DOCKER_CREDENTIALS = "docker1"
 
     }
     stages{
         stage ('git clone repo'){
             steps{
-                git credentialsId: 'github11', url: 'https://github.com/tejashree-dev/self_project.git'
+                git credentialsId: 'github11', url: "${GIT_REPO}" , branch: "${GIT_BRANCH}"
             }
         }
         stage ('creat docker image'){
             steps{
-                sh "docker build -t ${DOKCER_IMAGE} ."
+                sh "docker build -t ${DOCKER_IMAGE} ."
             }
         }
         stage ('push docker image to dockerhub'){
             steps{
                 script{
                     withDockerRegistry(credentialsId: 'docker1') {
-                        sh "docker push ${DOCKER_CREDENTIALS}
+                        sh "docker push ${DOCKER_IMAGE}"
+                    }
                 }
 
             }
@@ -30,7 +31,14 @@ pipeline{
         }
         stage ('ec2 deploying'){
             steps{
-
+                sshagent(['sshkey1']) {
+              sh '''
+        ssh -o StrictHostKeyChecking=no ubuntu@3.95.193.24 "
+            docker pull warkad/self_project &&
+            docker run -d -p 80:80 warkad/self_project
+          "
+             '''
+               }
             }
         }
     }
